@@ -36,14 +36,17 @@ passport.use(new Strategy(AUTH_OPTIONS, verifyCallback))
 // executes whenever userdata is being saved to the cookie
 // done is a callback in case we need to do any asynchronous work to serialize the user
 passport.serializeUser((user, done) => {
-    done(null, user);
+    done(null, user.id);
 });
 
 // Read the session from the cookie
 // takes in object from our session and returns back the data that will
 // be made available inside of Express on the request.user
-passport.deserializeUser((obj, done) => {
-    done(null, obj);
+passport.deserializeUser((id, done) => {
+    // User.findById(id).then(user => {
+    //     done(null, obj);
+    // })
+    done(null, id);
 })
 
 const app = express();
@@ -64,11 +67,13 @@ app.use(passport.initialize()); //sets up passport session
 app.use(passport.session());
 
 function checkLoggedIn(req, res, next) {
-    const isLoggedIn = true;
+    console.log('user', req.user)
+    const isLoggedIn = req.isAuthenticated() && req.user;
     if (!isLoggedIn) {
         return res.status(401).json({
             error: 'You must log in!',
         })
+        console.log('response',res)
     }
     next();
 }
@@ -93,7 +98,8 @@ app.get('/auth/google/callback',
 );
 
 app.get('/auth/logout', (req, res) => {
-
+    req.logout(); // req.user removed and terminates, clears any logged in session
+    return res.redirect('/');
 });
 
 app.get('/secret', checkLoggedIn, (req, res) => { // pass in middleware for this route, can be multiple functions
